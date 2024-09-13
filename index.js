@@ -29,6 +29,7 @@ const Constants = {
 	LoadLensMemory: 'load_lens_mem',
 	PictureMode: 'picture_mode',
 	QuadPixelDrive: 'quad_pixel_drive',
+	Aspect: 'aspect',
 	On: 'on',
 	Off: 'off',
 	Toggle: 'toggle',
@@ -97,6 +98,7 @@ class PanasonicInstance extends InstanceBase {
 		this.choiceLampState = this.buildList(ntcontrol.LampControlStatus)
 		this.choiceLensMemory = this.buildList(ntcontrol.LensMemory)
 		this.choicePictureMode = this.buildList(ntcontrol.PictureMode)
+		this.choiceAspect = this.buildList(ntcontrol.Aspect)
 
 		this.choiceOnOff = [
 			{ id: Constants.On, label: Constants.On },
@@ -380,6 +382,22 @@ class PanasonicInstance extends InstanceBase {
 			},
 		}
 
+		actions[Constants.Aspect] = {
+			name: 'Change the aspect ratio',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Aspect',
+					id: Constants.Aspect,
+					default: ntcontrol.Aspect['AUTO/VID AUTO/DEFAULT'],
+					choices: this.choiceAspect,
+				},
+			],
+			callback: (action) => {
+				this.sendValue(ntcontrol.AspectCommand, action.options[Constants.Aspect])
+			},
+		}
+
 		actions[Constants.QuadPixelDrive] = {
 			name: 'Turn the Quad Pixel Drive feature on/off',
 			options: [
@@ -616,6 +634,12 @@ class PanasonicInstance extends InstanceBase {
 					[Constants.PictureMode]: ntcontrol.enumValueToLabel(ntcontrol.PictureMode, value),
 				})
 				this.checkFeedbacks(Constants.PictureMode)
+				break
+			case 'Aspect':
+				this.setVariableValuesAndState({
+					[Constants.Aspect]: ntcontrol.enumValueToLabel(ntcontrol.Aspect, value),
+				})
+				this.checkFeedbacks(Constants.Aspect)
 				break
 			case 'ColorMatching':
 				this.setVariableValuesAndState({
@@ -968,6 +992,29 @@ class PanasonicInstance extends InstanceBase {
 			},
 		}
 
+		feedbacks[Constants.Aspect] = {
+			type: 'boolean',
+			name: 'Change background color by current aspect ratio',
+			description:
+				'If the current aspect ratio of the projector matches the specified value, change background color of the bank',
+			defaultStyle: {
+				color: combineRgb(0, 0, 0),
+				bgcolor: combineRgb(255, 255, 0),
+			},
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Aspect ratio',
+					id: Constants.Aspect,
+					default: ntcontrol.Aspect['AUTO/VID AUTO/DEFAULT'],
+					choices: this.choiceAspect,
+				},
+			],
+			callback: (feedback) => {
+				return ntcontrol.Aspect[this.variables[Constants.Aspect]] === feedback.options[Constants.Aspect]
+			},
+		}
+
 		feedbacks[Constants.ColorMatchingMode] = {
 			type: 'boolean',
 			name: 'Change background color by current color matching mode',
@@ -1159,6 +1206,11 @@ class PanasonicInstance extends InstanceBase {
 		})
 
 		variables.push({
+			name: 'Aspect Ratio',
+			variableId: Constants.Aspect
+		})
+
+		variables.push({
 			name: 'Color Matching 3-Colors: Red',
 			variableId: Constants.ColorMatching3Color + '_' + Constants.Red,
 		})
@@ -1217,6 +1269,7 @@ class PanasonicInstance extends InstanceBase {
 			[Constants.ColorMatchingMode]: ntcontrol.ColorMatching.Off,
 			[Constants.TestPattern]: ntcontrol.TestPattern.Off,
 			[Constants.PictureMode]: ntcontrol.PictureMode.STANDARD,
+			[Constants.Aspect]: ntcontrol.Aspect['AUTO/VID AUTO/DEFAULT'],
 			[Constants.Freeze]: undefined,
 			[Constants.Brightness]: 100,
 			[Constants.InputSource]: '',
@@ -1492,6 +1545,45 @@ class PanasonicInstance extends InstanceBase {
 								actionId: Constants.PictureMode,
 								options: {
 									[Constants.PictureMode]: mode.id,
+								},
+							},
+						],
+						up: [],
+					},
+				],
+			}
+		}
+
+		for (let aspect of this.choiceAspect) {
+			presets[`Selection_of_aspect_${aspect.label}`] = {
+				type: 'button',
+				category: 'Aspect ratio',
+				name: 'Selection of aspect ratio ' + aspect.label,
+				style: {
+					text: 'Aspect Ratio\\n' + (aspect.label || ''),
+					size: '14',
+					color: combineRgb(255, 255, 255),
+					bgcolor: combineRgb(0, 0, 0),
+				},
+				feedbacks: [
+					{
+						feedbackId: Constants.Aspect,
+						options: {
+							[Constants.Aspect]: aspect.id,
+						},
+						style: {
+							bgcolor: combineRgb(255, 255, 0),
+							color: combineRgb(0, 0, 0),
+						},
+					},
+				],
+				steps: [
+					{
+						down: [
+							{
+								actionId: Constants.Aspect,
+								options: {
+									[Constants.Aspect]: aspect.id,
 								},
 							},
 						],
